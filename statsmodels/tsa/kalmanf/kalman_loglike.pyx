@@ -51,7 +51,8 @@ def kalman_filter_double(ndarray[DOUBLE, ndim=1] y,
         # update state
         alpha = dgemm(T_mat, alpha) + dgemm(K,v_mat)
         L = T_mat - dgemm(K,Z_mat)
-        P = dgemm(dgemm(T_mat, P), L.T) + dgemm(R_mat, R_mat.T)
+        #NOTE: the first dots breaks things if switched to dgemm?
+        P = dot(dgemm(T_mat, P), L.T) + dgemm(R_mat, R_mat.T)
         loglikelihood += log(F_mat)
         i+=1
     for i in xrange(i,nobs):
