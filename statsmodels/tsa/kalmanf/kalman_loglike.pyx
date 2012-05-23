@@ -12,6 +12,8 @@ ctypedef complex64_t COMPLEX64
 cdef extern from "math.h":
     double log(double x)
 
+from statsmodels.src.tokyo cimport dgemm
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -35,27 +37,27 @@ def kalman_filter_double(ndarray[DOUBLE, ndim=1] y,
 #    cdef np.ndarray[DOUBLE, ndim=2] alpha = zeros((m,1))
     alpha = zeros((m,1))
     # initial variance
-    P = dot(pinv(identity(m**2)-kron(T_mat, T_mat)),dot(R_mat,
-            R_mat.T).ravel('F')).reshape(r,r, order='F')
+    P = dgemm(pinv(identity(m**2)-kron(T_mat, T_mat)),dgemm(R_mat,
+        R_mat.T).ravel('F')[:,None]).reshape(r,r, order='F')
     F_mat = 0
     while not F_mat == 1 and i < nobs:
         # Predict
-        v_mat = y[i] - dot(Z_mat,alpha) # one-step forecast error
+        v_mat = y[i] - dgemm(Z_mat,alpha) # one-step forecast error
         v[i] = v_mat
-        F_mat = dot(dot(Z_mat, P), Z_mat.T)
+        F_mat = dgemm(dgemm(Z_mat, P), Z_mat.T)
         F[i] = F_mat
         Finv = 1./F_mat # always scalar for univariate series
-        K = dot(dot(dot(T_mat,P),Z_mat.T),Finv) # Kalman Gain Matrix
+        K = dgemm(dgemm(dgemm(T_mat,P),Z_mat.T),Finv) # Kalman Gain Matrix
         # update state
-        alpha = dot(T_mat, alpha) + dot(K,v_mat)
-        L = T_mat - dot(K,Z_mat)
-        P = dot(dot(T_mat, P), L.T) + dot(R_mat, R_mat.T)
+        alpha = dgemm(T_mat, alpha) + dgemm(K,v_mat)
+        L = T_mat - dgemm(K,Z_mat)
+        P = dgemm(dgemm(T_mat, P), L.T) + dgemm(R_mat, R_mat.T)
         loglikelihood += log(F_mat)
         i+=1
     for i in xrange(i,nobs):
-        v_mat = y[i] - dot(Z_mat,alpha)
+        v_mat = y[i] - dgemm(Z_mat,alpha)
         v[i] = v_mat
-        alpha = dot(T_mat, alpha) + dot(K, v_mat)
+        alpha = dgemm(T_mat, alpha) + dgemm(K, v_mat)
     return v, F, loglikelihood
 
 @cython.boundscheck(False)

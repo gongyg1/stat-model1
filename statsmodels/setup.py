@@ -22,6 +22,7 @@ def configuration(parent_package='', top_path=None):
     config = Configuration('statsmodels', parent_package, top_path)
 
     # these are subpackages because they have Cython code
+    config.add_subpackage("src") # needs to be done first
     config.add_subpackage('nonparametric')
     config.add_subpackage('tsa')
 
@@ -48,7 +49,6 @@ def configuration(parent_package='', top_path=None):
                                     os.path.join(root, dir_name),
                                     start = curdir)
                                     )
-
     return config
 
 if __name__ == '__main__':
